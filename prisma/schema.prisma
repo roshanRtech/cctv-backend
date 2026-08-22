@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("TECHNICIAN") // ADMIN, SALES, TECHNICIAN
+  jobs      Job[]
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id             Int          @id @default(autoincrement())
+  name           String
+  phone          String
+  address        String
+  email          String?
+  quotations     Quotation[]
+  jobs           Job[]
+  projects       Project[]
+  tickets        Ticket[]
+  amcs           AMC[]
+  invoices       Invoice[]
+  repairs        RepairJob[]
+  installedItems SerialItem[]
+  createdAt      DateTime     @default(now())
+}
+
+model Supplier {
+  id          Int        @id @default(autoincrement())
+  name        String
+  companyName String?
+  phone       String
+  email       String?
+  address     String?
+  purchases   Purchase[]
+  createdAt   DateTime   @default(now())
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id            Int            @id @default(autoincrement())
+  modelName     String
+  categoryId    Int?
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  costPrice     Float          @default(0)
+  unitPrice     Float          @default(0)
+  stockQty      Int            @default(0)
+  minStockAlert Int            @default(5)
+  serialItems   SerialItem[]
+  purchaseItems PurchaseItem[]
+  createdAt     DateTime       @default(now())
+}
+
+model SerialItem {
+  id             Int       @id @default(autoincrement())
+  serialNumber   String    @unique
+  productId      Int
+  product        Product   @relation(fields: [productId], references: [id])
+  status         String    @default("IN_STOCK")
+  warrantyMonths Int       @default(12)
+  customerId     Int?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  installedDate  DateTime?
+}
+
+model RepairJob {
+  id                 Int      @id @default(autoincrement())
+  tokenNo            String   @unique 
+  customerId         Int
+  customer           Customer @relation(fields: [customerId], references: [id])
+  deviceType         String   
+  brandModel         String   
+  serialNumber       String?  
+  accessories        String?  
+  reportedIssue      String   
+  technicianNotes    String?  
+  status             String   @default("RECEIVED") 
+  isRMA              Boolean  @default(false)
+  rmaAgentName       String?  
+  rmaTrackingNo      String?  
+  replacementSerial  String?  
+  sparePartsCost     Float    @default(0)
+  laborCharge        Float    @default(0)
+  totalCost          Float    @default(0)
+  isPaid             Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  refNo       String    @unique
+  title       String
+  description String?
+  status      String    @default("PLANNING")
+  customerId  Int
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  totalValue  Float     @default(0)
+  progress    Int       @default(0)
+  startDate   DateTime?
+  deadline    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Purchase {
+  id            Int            @id @default(autoincrement())
+  poNumber      String         @unique
+  supplierId    Int
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  totalAmount   Float
+  paidAmount    Float          @default(0)
+  paymentStatus String         @default("PAID")
+  items         PurchaseItem[]
+  createdAt     DateTime       @default(now())
+}
+
+model PurchaseItem {
+  id         Int      @id @default(autoincrement())
+  purchaseId Int
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int
+  unitCost   Float
+  totalCost  Float
+}
+
+model Job {
+  id           Int       @id @default(autoincrement())
+  title        String
+  description  String?
+  status       String    @default("PENDING")
+  customerId   Int
+  customer     Customer  @relation(fields: [customerId], references: [id])
+  technicianId Int?
+  technician   User?     @relation(fields: [technicianId], references: [id])
+  sitePhotoUrl String?
+  customerSign String?
+  createdAt    DateTime  @default(now())
+}
+
+model Quotation {
+  id          Int      @id @default(autoincrement())
+  quotationNo String   @default("QTN-0001")
+  customerId  Int
+  customer    Customer @relation(fields: [customerId], references: [id])
+  totalAmount Float
+  detailsJson String?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+}
+
+model Ticket {
+  id          Int      @id @default(autoincrement())
+  title       String
+  issueType   String
+  priority    String   @default("MEDIUM")
+  status      String   @default("OPEN")
+  customerId  Int
+  customer    Customer @relation(fields: [customerId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model AMC {
+  id             Int      @id @default(autoincrement())
+  contractTitle  String
+  customerId     Int
+  customer       Customer @relation(fields: [customerId], references: [id])
+  startDate      DateTime
+  endDate        DateTime
+  annualFee      Float
+  visitFrequency String   @default("QUARTERLY")
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+}
+
+model Invoice {
+  id            Int      @id @default(autoincrement())
+  invoiceNumber String   @unique
+  customerId    Int
+  customer      Customer @relation(fields: [customerId], references: [id])
+  description   String
+  itemsJson     String?
+  totalAmount   Float
+  paidAmount    Float    @default(0)
+  balanceDue    Float
+  paymentStatus String   @default("UNPAID")
+  paymentMethod String   @default("CASH")
+  createdAt     DateTime @default(now())
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  userName    String   
+  action      String   // CREATE, UPDATE, DELETE
+  entityType  String   // INVOICE, PRODUCT, QUOTATION, JOB, etc.
+  details     String   
+  createdAt   DateTime @default(now())
+}
