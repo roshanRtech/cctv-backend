@@ -20,7 +20,14 @@ const projectRoutes = require('./routes/projectRoutes');
 const auditRoutes = require('./routes/auditRoutes'); // NEW
 
 const app = express();
-app.use(cors());
+
+// --- CORS Configuration (Vercel ගැටලුව විසඳීමට මෙය එකතු කර ඇත) ---
+app.use(cors({
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // API Endpoints
@@ -45,8 +52,12 @@ app.get('/', (req, res) => {
   res.json({ message: "CCTV & IT Service Management API is running" });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+// --- Local Development & Vercel Setup ---
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+}
+
 module.exports = app;
